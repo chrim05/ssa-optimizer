@@ -256,13 +256,20 @@ def constfolding_plus_math_replacing_plus_rm_useless(ssa):
   
   return changed
 
+def remove_dead_code(ssa):
+  changed = False
+
+  return changed
+
 def optimize1(ssa_functions, main):
   '''
   This function returns a copy of ssa with following changes:
   * Constant operations are folded
   * Some math instructions are replaced with faster (multiplications -> bit shift)
-  * Useless operations without sideeffects are removed
+  * Useless operations without sideeffects are removed (redundant code elimination)
 
+  * [TODO] Unreachable code elimination
+  * [TODO] Dead code elimination
   * [TODO] Non-recursive functions are inlined where possible
   * [TODO] Functions with constant args are compile time executed, excluding for instructions with sideeffects, which are keept
   * [TODO] Loop unrolling (cycles with a an compile time known lifetime)
@@ -272,19 +279,23 @@ def optimize1(ssa_functions, main):
   # traking passes, starting from -1 because the last pass doesn't actually change data (it just checks there's nothing to change anymore)
   passes = -1
 
+  # making sure to mutate a copy, keeping old unoptimized data
+  ssa_functions = deepcopy(ssa_functions)
+
   # not caring about algorithm calling order, they are called until the data is not gonna change anymore
   while True:
     passes += 1
 
-    # making sure to mutate a copy, keeping old unoptimized data
-    ssa_functions = deepcopy(ssa_functions)
     # starting to optimize the main function
-    ssa           = ssa_functions[main]
+    ssa     = ssa_functions[main]
     # tracking whether in this cycle some algorithm changed data
-    changed       = False
+    changed = False
 
     # constant folding + math simplfication + useless ops removal (excluding instructions with sideeffects)
     changed += constfolding_plus_math_replacing_plus_rm_useless(ssa)
+
+    # dead code is deleted
+    changed += remove_dead_code(ssa)
 
     # when the data is not goin to change anymore, the cycle has to stop
     if not changed:
